@@ -1,4 +1,5 @@
 File Downloader
+
 This is a simple C# app that downloads files from a list of URLs and saves them to a directory based on their domain. The app uses async methods to download the files and automatically determines the number of threads to use based on the processor count. It also handles errors gracefully, so it will continue to download other files even if there is a problem with a particular URL.
 
 Requirements
