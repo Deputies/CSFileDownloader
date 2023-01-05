@@ -13,5 +13,3 @@ Run the FileDownloader.exe file. The files will be downloaded and saved to a dir
 Limitations
 The app does not check the file type of the URLs, so it will attempt to download any type of file specified in the urls.txt file.
 License
-
-This app is licensed under the MIT License. See the LICENSE file for more information.
