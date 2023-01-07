@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace FileDownloader
@@ -30,8 +31,8 @@ namespace FileDownloader
             int processorCount = Environment.ProcessorCount;
             int maxThreads = processorCount * 2;
 
-            // Create a web client for downloading the files
-            using (WebClient client = new WebClient())
+            // Create an HttpClient for downloading the files
+            using (HttpClient client = new HttpClient())
             {
                 // Use a SemaphoreSlim to limit the number of concurrent downloads
                 using (SemaphoreSlim semaphore = new SemaphoreSlim(maxThreads))
@@ -46,29 +47,37 @@ namespace FileDownloader
                         // Download the file asynchronously
                         tasks.Add(Task.Run(async () =>
                         {
-                            try
-                            {
-                                // Extract the file name and domain from the URL
-                                Uri uri = new Uri(line);
-                                string file = Path.GetFileName(uri.LocalPath);
-                                string domain = uri.Host;
+                        try
+                        {
+                            // Extract the file name and domain from the URL
+                            Uri uri = new Uri(line);
+                            string file = Path.GetFileName(uri.LocalPath);
+                            string domain = uri.Host;
 
-                                // Create a directory for the domain, if it doesn't already exist
-                                string directory = Path.Combine(Environment.CurrentDirectory, domain);
-                                if (!Directory.Exists(directory))
+                            // Create a directory for the domain, if it doesn't already exist
+                            string directory = Path.Combine(Environment.CurrentDirectory, domain);
+                            if (!Directory.Exists(directory))
+                            {
+                                Directory.CreateDirectory(directory);
+                            }
+
+                            // Download the file and save it to the domain's directory
+                            string path = Path.Combine(directory, file);
+                            using (HttpResponseMessage response = await client.GetAsync(line))
+                            {
+                                response.EnsureSuccessStatusCode();
+                                using (Stream contentStream = await response.Content.ReadAsStreamAsync())
+                                using (FileStream fileStream = new FileStream(path, FileMode.Create))
                                 {
-                                    Directory.CreateDirectory(directory);
+                                    await contentStream.CopyToAsync(fileStream);
                                 }
-
-                                // Download the file and save it to the domain's directory
-                                string path = Path.Combine(directory, file);
-                                await client.DownloadFileTaskAsync(line, path);
-                                Console.WriteLine($"Successfully downloaded {file} from {domain}");
                             }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine($"Error downloading file: {e.Message}");
-                            }
+                            Console.WriteLine($"Successfully downloaded {file} from {domain}");
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"Error downloading file: {e.Message}");
+                        }
                             finally
                             {
                                 // Release the semaphore slot
